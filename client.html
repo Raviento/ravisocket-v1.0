@@ -1,25 +1,164 @@
 <!DOCTYPE html>
-<html>
-<head><title>Komut Gönderici</title></head>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Komut İstemcisi</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      color: #eee;
+      font-family: 'Fira Mono', monospace;
+    }
+    .container {
+      background: #18191a;
+      padding: 40px 32px 32px 32px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 420px;
+      max-width: 90vw;
+    }
+    h2 {
+      margin-bottom: 24px;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+      color: #00e0ff;
+      text-shadow: 0 2px 8px #000a;
+    }
+    .input-row {
+      display: flex;
+      width: 100%;
+      gap: 8px;
+      margin-bottom: 16px;
+      justify-content: center;
+    }
+    input#komut {
+      width: 300px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      background: #23272b;
+      color: #eee;
+      font-size: 1rem;
+      outline: none;
+      transition: box-shadow 0.2s;
+      box-shadow: 0 2px 8px #0002;
+    }
+    input#komut:focus {
+      box-shadow: 0 0 0 2px #00e0ff55;
+    }
+    button {
+      padding: 10px 18px;
+      border-radius: 6px;
+      border: none;
+      background: linear-gradient(90deg, #00e0ff 0%, #00ffa3 100%);
+      color: #18191a;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 2px 8px #0002;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #00ffa3 0%, #00e0ff 100%);
+      color: #111;
+    }
+    #sonuclar {
+      white-space: pre-wrap;
+      margin-top: 10px;
+      background: #23272b;
+      padding: 14px;
+      border-radius: 8px;
+      max-height: 320px;
+      overflow-y: auto;
+      width: 100%;
+      font-size: 1rem;
+      box-shadow: 0 2px 8px #0002;
+      min-height: 60px;
+    }
+    @media (max-width: 500px) {
+      .container { min-width: unset; padding: 16px; }
+      input#komut { width: 100px; }
+    }
+  </style>
+</head>
 <body>
-  <h2>WebSocket Komut Yollayıcı</h2>
-  <input id="komut" placeholder="Komut yaz (örnek: whoami)" />
-  <button onclick="gonder()">Gönder</button>
-
-  <pre id="cevap"></pre>
-
+  <div class="container">
+    <h2>🧠 WebSocket Komut Arayüzü</h2>
+    <div class="input-row">
+      <input id="komut" placeholder="Komut girin..." />
+      <button onclick="gonder()">Gönder</button>
+    </div>
+    <div id="sonuclar"></div>
+  </div>
   <script>
-    const soket = new WebSocket("ws://localhost:8765");
+    const soket = new WebSocket("ws://localhost:8765"); // IP ile değiştirilebilir
+    const input = document.getElementById("komut");
+    const sonuclar = document.getElementById("sonuclar");
+    let komutGecmisi = [];
+    let index = -1;
 
-    soket.onopen = () => console.log("Bağlantı kuruldu.");
-    soket.onmessage = (event) => {
-      document.getElementById("cevap").innerText = "Sonuç:\n" + event.data;
+    soket.onopen = () => {
+      yaz("✅ Bağlantı kuruldu.\n");
     };
 
-    function gonder() {
-      const komut = document.getElementById("komut").value;
-      soket.send(komut);
+    soket.onmessage = (event) => {
+      yaz(event.data + "\n");
+    };
+
+    soket.onclose = () => {
+      yaz("❌ Sunucu bağlantısı kesildi.\n");
+    };
+
+    function yaz(mesaj) {
+      const pre = document.createElement("div");
+      pre.textContent = mesaj;
+      sonuclar.appendChild(pre);
+      sonuclar.scrollTop = sonuclar.scrollHeight;
     }
+
+    function gonder() {
+      const mesaj = input.value.trim();
+      if (mesaj !== "") {
+        soket.send(mesaj);
+        komutGecmisi.push(mesaj);
+        index = komutGecmisi.length;
+        yaz("📤 " + mesaj);
+        input.value = "";
+      }
+    }
+
+    // Enter tuşu ile gönder
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") gonder();
+      if (e.key === "ArrowUp") {
+        if (index > 0) {
+          index--;
+          input.value = komutGecmisi[index];
+        }
+      }
+      if (e.key === "ArrowDown") {
+        if (index < komutGecmisi.length - 1) {
+          index++;
+          input.value = komutGecmisi[index];
+        } else {
+          input.value = "";
+          index = komutGecmisi.length;
+        }
+      }
+    });
   </script>
 </body>
 </html>
