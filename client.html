@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><title>Komut Gönderici</title></head>
+<body>
+  <h2>WebSocket Komut Yollayıcı</h2>
+  <input id="komut" placeholder="Komut yaz (örnek: whoami)" />
+  <button onclick="gonder()">Gönder</button>
+
+  <pre id="cevap"></pre>
+
+  <script>
+    const soket = new WebSocket("ws://localhost:8765");
+
+    soket.onopen = () => console.log("Bağlantı kuruldu.");
+    soket.onmessage = (event) => {
+      document.getElementById("cevap").innerText = "Sonuç:\n" + event.data;
+    };
+
+    function gonder() {
+      const komut = document.getElementById("komut").value;
+      soket.send(komut);
+    }
+  </script>
+</body>
+</html>
